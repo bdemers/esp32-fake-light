@@ -271,7 +271,6 @@ void setupLEDs() {
 
     // set the initial state of LEDs
     lightsChanges(lights.lights[0]);
-
 }
 
 void setupWifi(const char* ssid, const char* pass, const char* hostname) {
@@ -357,8 +356,6 @@ bool serverStarted = false;
 void setup() {
     // enable serial
     Serial.begin(9600);
-
-    delay(500);
 
     preferences.begin("fake-light", false);
     String ssid = preferences.getString("ssid", "");
