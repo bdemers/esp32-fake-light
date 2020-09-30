@@ -11,7 +11,7 @@
 #include <Preferences.h>
 
 #define ONBOARD_LED  2
-#define CONTROL_PIN 16
+#define CONTROL_PIN 23
 
 // setting PWM properties
 const uint16_t freq = 5000;
@@ -242,6 +242,24 @@ void lightBrightnessCommandCallback(cmd* c) {
     lightsChanges(lights.lights[0]);
 }
 
+void printHelp() {
+    Serial.println("\thostname [-hostname <your-hostname>] [-service_name <your-service-name>] [-device_id <your-device-id>]'");
+    Serial.println("\twifi -ssid <your-ssid> -pass <your-pass>'");
+    Serial.println("\tlight-on [0|1]");
+    Serial.println("\tlight-temperature <value>");
+    Serial.println("\tlight-brightness <value>");
+    Serial.println("\treboot");
+    Serial.println("\thelp");
+}
+
+void helpCommandCallback(cmd* c) {
+    printHelp();
+}
+
+void rebootCommandCallback(cmd* c) {
+    ESP.restart();
+}
+
 void setupLEDs() {
     pinMode(ONBOARD_LED, OUTPUT);
 
@@ -307,8 +325,6 @@ void registerWifiCommand() {
     Command wifiCommand = cli.addCmd("wifi", wifiCommandCallback);
     wifiCommand.addArg("ssid");
     wifiCommand.addArg("pass");
-
-    Serial.println("\twifi -ssid <your-ssid> -pass <your-pass>'");
 }
 
 void registerHostnameCommand() {
@@ -316,27 +332,33 @@ void registerHostnameCommand() {
     command.addArg("hostname", HOSTNAME);
     command.addArg("service_name", SERVICE_NAME);
     command.addArg("device_id", DEVICE_ID);
-
-    Serial.println("\thostname [-hostname <your-hostname>] [-service_name <your-service-name>] [-device_id <your-device-id>]'");
 }
 
 void registerLightCommands() {
     Command onCommand = cli.addCmd("light-on", lightOnCommandCallback);
     onCommand.addPositionalArgument("on", "1");
-    Serial.println("\tlight-on [0|1]");
 
     Command tempCommand = cli.addCmd("light-temperature", lightTempCommandCallback);
     tempCommand.addPositionalArgument("temp", "1");
-    Serial.println("\tlight-temperature <value>");
 
     Command brightCommand = cli.addCmd("light-brightness", lightBrightnessCommandCallback);
     brightCommand.addPositionalArgument("brightness", "1");
-    Serial.println("\tlight-brightness <value>");
 }
 
+void registerRebootCommands() {
+    cli.addCmd("reboot", rebootCommandCallback);
+}
+
+void registerHelpCommands() {
+    cli.addCmd("help", helpCommandCallback);
+}
+
+bool serverStarted = false;
 void setup() {
     // enable serial
     Serial.begin(9600);
+
+    delay(500);
 
     preferences.begin("fake-light", false);
     String ssid = preferences.getString("ssid", "");
@@ -351,27 +373,34 @@ void setup() {
     registerWifiCommand();
     registerHostnameCommand();
     registerLightCommands();
+    registerRebootCommands();
+    registerHelpCommands();
+    printHelp();
 
     Serial.println("Checking for WiFi configuration...");
     if (ssid != "") {
         Serial.print("Connecting to WiFi SSID: ");
         Serial.println(ssid);
         setupWifi(ssid.c_str(), pass.c_str(), hostname.c_str());
+
+        // get the configuration
+        loadSettings();
+
+        // enable LEDs
+        setupLEDs();
+
+        // setup http server
+        setupHTTP();
+
+        // after everything is configured broadcast
+        setupMDNS(hostname.c_str(), serviceName.c_str(), deviceId.c_str());
+
+        // mark the server started
+        serverStarted = true;
+
     } else {
         Serial.println("WiFi not configured use 'wifi -ssid <your-ssid> -pass <your-pass>'");
     }
-
-    // get the configuration
-    loadSettings();
-
-    // enable LEDs
-    setupLEDs();
-
-    // setup http server
-    setupHTTP();
-
-    // after everything is configured broadcast
-    setupMDNS(hostname.c_str(), serviceName.c_str(), deviceId.c_str());
 }
 
 String input;
@@ -407,5 +436,7 @@ void loop() {
         Serial.print("\r\n# ");
     }
 
-    server.handleClient();
+    if (serverStarted) {
+        server.handleClient();
+    }
 }

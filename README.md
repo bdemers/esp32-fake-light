@@ -21,7 +21,7 @@ there is no security for it's REST API, so I figured I'd hack up a clone with an
 
 ## Wiring
 
-- ESP32 pin `GPIO16` to MOSFET Driver `TRIG/PWM`
+- ESP32 pin `GPIO23` to MOSFET Driver `TRIG/PWM`
 - ESP32 `GRD` and MOSFET Driver `GRD` to Ground...
 - LED Strip to MOSFET Driver `OUT+` and `OUT-`
 - Power Supply to MOSFET Driver `VIN+` and `VIN-`
