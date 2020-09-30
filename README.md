@@ -70,6 +70,8 @@ the Elgato Control Center Application.
 - `light-on [0|1]`
 - `light-temperature <value>`
 - `light-brightness <value>`
+- `reboot`
+- `help`
 
 ## REST Endpoints
 
