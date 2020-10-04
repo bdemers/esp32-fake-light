@@ -7,7 +7,7 @@
 struct AccessoryInfo {
     String displayName = DISPLAY_NAME;
     String features[1] = { "lights" };
-    int firmwareBuildNumber = 195;
+    int firmwareBuildNumber = 199;
     String firmwareVersion = "1.0.3";
     int hardwareBoardType = 200;
     String productName = "Elgato Key Light Air";

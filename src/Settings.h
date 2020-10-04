@@ -10,6 +10,8 @@ struct Settings {
     uint8_t powerOnTemperature = 213;
     int switchOffDurationMs = 300;
     int switchOnDurationMs = 100;
+    // "powerOnSaturation":0,
+    // "powerOnHue":0
 
     Settings() = default;
 
@@ -23,6 +25,16 @@ struct Settings {
         doc["switchOnDurationMs"] = switchOnDurationMs;
 
         return doc;
+    }
+
+    void fromJson(JsonDocument &doc) {
+
+        colorChangeDurationMs = doc["colorChangeDurationMs"];
+        powerOnBehavior = doc["powerOnBehavior"];
+        powerOnBrightness = doc["powerOnBrightness"];
+        powerOnTemperature = doc["powerOnTemperature"];
+        switchOffDurationMs = doc["switchOffDurationMs"];
+        switchOnDurationMs = doc["switchOnDurationMs"];
     }
 };
 

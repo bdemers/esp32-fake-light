@@ -74,6 +74,20 @@ void ledOn(uint8_t &brightness) {
     ledcWrite(ledChannel, pwmValue);
 }
 
+void lightOn(uint8_t brightness) {
+    // board LED on
+    digitalWrite(ONBOARD_LED, HIGH);
+    // LED strip PWM
+    ledOn(brightness);
+}
+
+void lightOff() {
+    // both off
+    digitalWrite(ONBOARD_LED, LOW);
+    uint8_t off = 0;
+    ledOn(off);
+}
+
 void lightsChanges(Light &light) {
 
     Serial.print("PowerOn: ");
@@ -86,14 +100,9 @@ void lightsChanges(Light &light) {
     Serial.println(light.brightness);
 
     if (light.on == 1) {
-        // board LED on
-        digitalWrite(ONBOARD_LED, HIGH);
-        // LED strip PWM
-        ledOn(light.brightness);
+        lightOn(light.brightness);
     } else {
-        // both off
-        digitalWrite(ONBOARD_LED, LOW);
-        ledOn(light.on);
+        lightOff();
     }
 
     // update settings with current info
@@ -143,6 +152,14 @@ void getSettings() {
     sendJson(doc);
 }
 
+void putSettings() {
+    String body = server.arg("plain");
+    parseJson(body, [](DynamicJsonDocument &doc) {
+        settings.fromJson(doc);
+    });
+    getSettings();
+}
+
 void getLights() {
     DynamicJsonDocument doc = lights.toJson();
     sendJson(doc);
@@ -163,6 +180,21 @@ void putLights() {
     });
 }
 
+void identify() {
+    // on off on off
+    lightOn(100);
+    delay(500);
+
+    lightOff();
+    delay(500);
+
+    lightOn(100);
+    delay(500);
+
+    lightOff();
+    delay(500);
+}
+
 // Define routing
 void restServerRouting() {
     server.on("/", HTTP_GET, []() {
@@ -173,8 +205,10 @@ void restServerRouting() {
     server.on(F("/elgato/accessory-info"), HTTP_GET, getAccessoryInfo);
     server.on(F("/elgato/accessory-info"), HTTP_PUT, postAccessoryInfo);
     server.on(F("/elgato/lights/settings"), HTTP_GET, getSettings);
+    server.on(F("/elgato/lights/settings"), HTTP_PUT, putSettings);
     server.on(F("/elgato/lights"), HTTP_GET, getLights);
     server.on(F("/elgato/lights"), HTTP_PUT, putLights);
+    server.on(F("/elgato/identify"), HTTP_POST, identify);
 }
 
 // Manage not found URL
