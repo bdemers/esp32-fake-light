@@ -5,7 +5,7 @@
 #include "FakeLight.h"
 
 struct AccessoryInfo {
-    String displayName = DISPLAY_NAME;
+    String displayName = DEFAULT_DISPLAY_NAME;
     String features[1] = { "lights" };
     int firmwareBuildNumber = 199;
     String firmwareVersion = "1.0.3";
