@@ -2,9 +2,10 @@
 #define ESP32_LIGHT_ACCESSORYINFO_H
 
 #include <ArduinoJson.h>
+#include "FakeLight.h"
 
 struct AccessoryInfo {
-    String displayName = "Fake Light";
+    String displayName = DISPLAY_NAME;
     String features[1] = { "lights" };
     int firmwareBuildNumber = 195;
     String firmwareVersion = "1.0.3";

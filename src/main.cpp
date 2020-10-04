@@ -129,11 +129,11 @@ void getAccessoryInfo() {
     sendJson(doc);
 }
 
-
 void postAccessoryInfo() {
     String body = server.arg("plain");
     parseJson(body, [](DynamicJsonDocument &doc) {
             info.fromJson(doc);
+            preferences.putString("displayName", info.displayName);
             getAccessoryInfo();
     });
 }
@@ -207,6 +207,21 @@ void wifiCommandCallback(cmd* c) {
     ESP.restart();
 }
 
+void statusCommandCallback(cmd* c) {
+    Command cmd(c);
+
+    if (WiFi.status() == WL_CONNECTED) {
+        Serial.print("\nWiFi connected to: ");
+        Serial.println(WiFi.SSID());
+        Serial.print("\tHostname: ");
+        Serial.println(WiFi.getHostname());
+        Serial.print("\tIP address: ");
+        Serial.println(WiFi.localIP());
+    } else {
+        Serial.println("\nWiFi not connected");
+    }
+}
+
 void hostnameCommandCallback(cmd* c) {
     Command cmd(c);
 
@@ -248,6 +263,7 @@ void printHelp() {
     Serial.println("\tlight-on [0|1]");
     Serial.println("\tlight-temperature <value>");
     Serial.println("\tlight-brightness <value>");
+    Serial.println("\tstatus");
     Serial.println("\treboot");
     Serial.println("\thelp");
 }
@@ -276,8 +292,9 @@ void setupLEDs() {
 void setupWifi(const char* ssid, const char* pass, const char* hostname) {
     // configure wifi
     WiFi.mode(WIFI_STA);
-    WiFi.setHostname(hostname);
+
     WiFi.begin(ssid, pass);
+    WiFi.setHostname(hostname);
     Serial.println("");
 
     // Wait for connection
@@ -290,6 +307,8 @@ void setupWifi(const char* ssid, const char* pass, const char* hostname) {
     Serial.println(ssid);
     Serial.print("IP address: ");
     Serial.println(WiFi.localIP());
+    Serial.print("Hostname: ");
+    Serial.println(WiFi.getHostname());
 }
 
 void setupMDNS(const char* hostname, const char* serviceName, const char* deviceId) {
@@ -320,20 +339,17 @@ void setupHTTP() {
     Serial.println("HTTP server started");
 }
 
-void registerWifiCommand() {
+void registerCliCommands() {
+
     Command wifiCommand = cli.addCmd("wifi", wifiCommandCallback);
     wifiCommand.addArg("ssid");
     wifiCommand.addArg("pass");
-}
 
-void registerHostnameCommand() {
-    Command command = cli.addCmd("hostname", hostnameCommandCallback);
-    command.addArg("hostname", HOSTNAME);
-    command.addArg("service_name", SERVICE_NAME);
-    command.addArg("device_id", DEVICE_ID);
-}
+    Command hostnameCommand = cli.addCmd("hostname", hostnameCommandCallback);
+    hostnameCommand.addArg("hostname", HOSTNAME);
+    hostnameCommand.addArg("service_name", SERVICE_NAME);
+    hostnameCommand.addArg("device_id", DEVICE_ID);
 
-void registerLightCommands() {
     Command onCommand = cli.addCmd("light-on", lightOnCommandCallback);
     onCommand.addPositionalArgument("on", "1");
 
@@ -342,67 +358,16 @@ void registerLightCommands() {
 
     Command brightCommand = cli.addCmd("light-brightness", lightBrightnessCommandCallback);
     brightCommand.addPositionalArgument("brightness", "1");
-}
 
-void registerRebootCommands() {
+    cli.addCmd("status", statusCommandCallback);
     cli.addCmd("reboot", rebootCommandCallback);
-}
-
-void registerHelpCommands() {
     cli.addCmd("help", helpCommandCallback);
-}
 
-bool serverStarted = false;
-void setup() {
-    // enable serial
-    Serial.begin(9600);
-
-    preferences.begin("fake-light", false);
-    String ssid = preferences.getString("ssid", "");
-    String pass = preferences.getString("pass", "");
-    String hostname = preferences.getString("hostname", HOSTNAME);
-    String serviceName = preferences.getString("service_name", SERVICE_NAME);
-    String deviceId = preferences.getString("device_id", DEVICE_ID);
-    Serial.flush();
-
-    // Configure a command line interface (CLI)
-    Serial.println("Registering Commands");
-    registerWifiCommand();
-    registerHostnameCommand();
-    registerLightCommands();
-    registerRebootCommands();
-    registerHelpCommands();
     printHelp();
-
-    Serial.println("Checking for WiFi configuration...");
-    if (ssid != "") {
-        Serial.print("Connecting to WiFi SSID: ");
-        Serial.println(ssid);
-        setupWifi(ssid.c_str(), pass.c_str(), hostname.c_str());
-
-        // get the configuration
-        loadSettings();
-
-        // enable LEDs
-        setupLEDs();
-
-        // setup http server
-        setupHTTP();
-
-        // after everything is configured broadcast
-        setupMDNS(hostname.c_str(), serviceName.c_str(), deviceId.c_str());
-
-        // mark the server started
-        serverStarted = true;
-
-    } else {
-        Serial.println("WiFi not configured use 'wifi -ssid <your-ssid> -pass <your-pass>'");
-    }
 }
 
 String input;
-void loop() {
-
+void handleSerialInput() {
     // Check if user typed something into the serial monitor
     if (Serial.available()) {
         char c = Serial.read();
@@ -432,6 +397,54 @@ void loop() {
         }
         Serial.print("\r\n# ");
     }
+}
+
+bool serverStarted = false;
+void setup() {
+    // enable serial
+    Serial.begin(9600);
+
+    preferences.begin("fake-light", false);
+    String ssid = preferences.getString("ssid", "");
+    String pass = preferences.getString("pass", "");
+    String hostname = preferences.getString("hostname", HOSTNAME);
+    String serviceName = preferences.getString("service_name", SERVICE_NAME);
+    String deviceId = preferences.getString("device_id", DEVICE_ID);
+    info.displayName = preferences.getString("displayName", DISPLAY_NAME);
+    Serial.flush();
+
+    // Configure a command line interface (CLI)
+    Serial.println("Registering Commands");
+    registerCliCommands();
+
+    Serial.println("Checking for WiFi configuration...");
+    if (ssid != "") {
+        Serial.print("Connecting to WiFi SSID: ");
+        Serial.println(ssid);
+        setupWifi(ssid.c_str(), pass.c_str(), hostname.c_str());
+
+        // get the configuration
+        loadSettings();
+
+        // enable LEDs
+        setupLEDs();
+
+        // setup http server
+        setupHTTP();
+
+        // after everything is configured broadcast
+        setupMDNS(hostname.c_str(), serviceName.c_str(), deviceId.c_str());
+
+        // mark the server started
+        serverStarted = true;
+
+    } else {
+        Serial.println("WiFi not configured use 'wifi -ssid <your-ssid> -pass <your-pass>'");
+    }
+}
+
+void loop() {
+    handleSerialInput();
 
     if (serverStarted) {
         server.handleClient();
