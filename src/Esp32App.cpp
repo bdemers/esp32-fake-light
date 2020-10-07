@@ -5,10 +5,11 @@
 #include "Esp32App.h"
 #include <WiFi.h>
 #include <Preferences.h>
+#include <ArduinoOTA.h>
 
 static SimpleCLI simpleCli;
 
-TaskHandle_t serialInputTask;
+TaskHandle_t baseAppTask;
 
 Command Esp32App::addCommand(const char *name, void (*callback)(cmd *)) {
     return simpleCli.addCommand(name, callback);
@@ -73,6 +74,22 @@ void helpCommandCallback(cmd* c) {
     Serial.println(simpleCli.toString());
 }
 
+void otaCommandCallback(cmd* c) {
+    Command cmd(c);
+    int port = cmd.getArg("port").getValue().toInt();
+    String pass = cmd.getArg("pass").getValue();
+
+    Preferences prefs;
+    prefs.begin("ota", false);
+    prefs.putInt("port", port);
+    prefs.putString("pass", pass);
+    prefs.end();
+
+    Serial.println("Updated OTA settings");
+    ESP.restart();
+
+}
+
 void setupWifi(const char* ssid, const char* pass, const char* hostname) {
 
     Serial.print("Connecting to WiFi SSID: ");
@@ -126,6 +143,12 @@ void Esp32App::registerCommands() {
     simpleCli.addCommand("status", statusCommandCallback)
         .setDescription("Prints basic device status");
 
+    // ota
+    Command otaCommand = simpleCli.addCommand("ota", otaCommandCallback);
+    otaCommand.setDescription("Sets the OTA firmware update port and password, then restarts");
+    otaCommand.addArg("port", "3232");
+    otaCommand.addArg("pass");
+
     // help
     simpleCli.addCommand("help", helpCommandCallback)
         .setDescription("Prints this help message");
@@ -169,10 +192,53 @@ void _handleSerialInput() {
     }
 }
 
-void inputHandlerLoop(void * pvParameters) {
+void loopHandler(void * pvParameters) {
     while (true) {
         _handleSerialInput();
+        ArduinoOTA.handle();
     }
+}
+
+void startOTA() {
+
+    Preferences prefs;
+    prefs.begin("ota", false);
+    int port = prefs.getInt("port", 3232);
+    String pass = prefs.getString("pass", "admin");
+    prefs.end();
+    Serial.flush();
+
+    ArduinoOTA.setPort(port);
+    ArduinoOTA.setHostname(WiFi.getHostname());
+    ArduinoOTA.setPassword(pass.c_str());
+
+    ArduinoOTA
+        .onStart([]() {
+            String type;
+            if (ArduinoOTA.getCommand() == U_FLASH)
+                type = "sketch";
+            else // U_SPIFFS
+                type = "filesystem";
+
+            // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
+            Serial.println("Start firmware update: " + type);
+        })
+        .onEnd([]() {
+            Serial.println("\nFirmware update finished");
+        })
+        .onProgress([](unsigned int progress, unsigned int total) {
+            Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+        })
+        .onError([](ota_error_t error) {
+            Serial.printf("Error[%u]: ", error);
+            if (error == OTA_AUTH_ERROR) Serial.println("OTA firmware update failed: Authentication Error");
+            else if (error == OTA_BEGIN_ERROR) Serial.println("OTA firmware update failed: Failed to Start");
+            else if (error == OTA_CONNECT_ERROR) Serial.println("OTA firmware update failed: Connection Failure");
+            else if (error == OTA_RECEIVE_ERROR) Serial.println("OTA firmware update failed: Receive Error");
+            else if (error == OTA_END_ERROR) Serial.println("OTA firmware update failed: End Failed");
+        });
+
+    ArduinoOTA.begin();
 }
 
 void Esp32App::begin() {
@@ -196,14 +262,16 @@ void Esp32App::begin() {
         defaultNoWifiHandler();
     }
 
+    startOTA();
+
     xTaskCreatePinnedToCore(
-            inputHandlerLoop, /* Task function. */
-            "Serial Input",   /* name of task. */
-            10000,     /* Stack size of task */
-            nullptr,      /* parameter of the task */
-            1,         /* priority of the task */
-            &serialInputTask, /* Task handle to keep track of created task */
-            1);        /* pin task to core 0 */
+            loopHandler, /* Task function. */
+            "Serial/Firmware", /* name of task. */
+            10000, /* Stack size of task */
+            nullptr, /* parameter of the task */
+            1, /* priority of the task */
+            &baseAppTask, /* Task handle to keep track of created task */
+            1); /* pin task to core 0 */
 }
 
 
