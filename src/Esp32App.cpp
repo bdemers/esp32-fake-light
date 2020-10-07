@@ -192,53 +192,64 @@ void _handleSerialInput() {
     }
 }
 
+boolean otaEnabled = false;
 void loopHandler(void * pvParameters) {
     while (true) {
         _handleSerialInput();
-        ArduinoOTA.handle();
+
+        if (otaEnabled) {
+            ArduinoOTA.handle();
+        }
     }
 }
 
-void startOTA() {
+bool startOTA() {
 
     Preferences prefs;
     prefs.begin("ota", false);
     int port = prefs.getInt("port", 3232);
-    String pass = prefs.getString("pass", "admin");
+    String pass = prefs.getString("pass", "");
     prefs.end();
     Serial.flush();
 
-    ArduinoOTA.setPort(port);
-    ArduinoOTA.setHostname(WiFi.getHostname());
-    ArduinoOTA.setPassword(pass.c_str());
+    if (!pass.isEmpty()) {
+        ArduinoOTA.setPort(port);
+        ArduinoOTA.setHostname(WiFi.getHostname());
+        ArduinoOTA.setPassword(pass.c_str());
 
-    ArduinoOTA
-        .onStart([]() {
-            String type;
-            if (ArduinoOTA.getCommand() == U_FLASH)
-                type = "sketch";
-            else // U_SPIFFS
-                type = "filesystem";
+        ArduinoOTA
+                .onStart([]() {
+                    String type;
+                    if (ArduinoOTA.getCommand() == U_FLASH)
+                        type = "sketch";
+                    else // U_SPIFFS
+                        type = "filesystem";
 
-            // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
-            Serial.println("Start firmware update: " + type);
-        })
-        .onEnd([]() {
-            Serial.println("\nFirmware update finished");
-        })
-        .onProgress([](unsigned int progress, unsigned int total) {
-            Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
-        })
-        .onError([](ota_error_t error) {
-            Serial.printf("Error[%u]: ", error);
-            if (error == OTA_AUTH_ERROR) Serial.println("OTA firmware update failed: Authentication Error");
-            else if (error == OTA_BEGIN_ERROR) Serial.println("OTA firmware update failed: Failed to Start");
-            else if (error == OTA_CONNECT_ERROR) Serial.println("OTA firmware update failed: Connection Failure");
-            else if (error == OTA_RECEIVE_ERROR) Serial.println("OTA firmware update failed: Receive Error");
-            else if (error == OTA_END_ERROR) Serial.println("OTA firmware update failed: End Failed");
-        });
+                    // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
+                    Serial.println("Start firmware update: " + type);
+                })
+                .onEnd([]() {
+                    Serial.println("\nFirmware update finished");
+                })
+                .onProgress([](unsigned int progress, unsigned int total) {
+                    Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+                })
+                .onError([](ota_error_t error) {
+                    Serial.printf("Error[%u]: ", error);
+                    if (error == OTA_AUTH_ERROR) Serial.println("OTA firmware update failed: Authentication Error");
+                    else if (error == OTA_BEGIN_ERROR) Serial.println("OTA firmware update failed: Failed to Start");
+                    else if (error == OTA_CONNECT_ERROR)
+                        Serial.println("OTA firmware update failed: Connection Failure");
+                    else if (error == OTA_RECEIVE_ERROR) Serial.println("OTA firmware update failed: Receive Error");
+                    else if (error == OTA_END_ERROR) Serial.println("OTA firmware update failed: End Failed");
+                });
 
-    ArduinoOTA.begin();
+        ArduinoOTA.begin();
+    } else {
+        Serial.println("OTA firmware updates are NOT enabled, run `ota --pass` to set a password");
+    }
+
+    return !pass.isEmpty();
 }
 
 void Esp32App::begin() {
@@ -262,7 +273,7 @@ void Esp32App::begin() {
         defaultNoWifiHandler();
     }
 
-    startOTA();
+    otaEnabled = startOTA();
 
     xTaskCreatePinnedToCore(
             loopHandler, /* Task function. */
