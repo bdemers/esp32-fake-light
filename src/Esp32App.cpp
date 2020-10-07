@@ -8,6 +8,8 @@
 
 static SimpleCLI simpleCli;
 
+TaskHandle_t serialInputTask;
+
 Command Esp32App::addCommand(const char *name, void (*callback)(cmd *)) {
     return simpleCli.addCommand(name, callback);
 }
@@ -97,7 +99,7 @@ void setupWifi(const char* ssid, const char* pass, const char* hostname) {
     Serial.println(WiFi.getHostname());
 }
 
-void registerCommands() {
+void Esp32App::registerCommands() {
     Serial.println("Registering Commands");
 
     // wifi
@@ -129,30 +131,8 @@ void registerCommands() {
         .setDescription("Prints this help message");
 }
 
-void Esp32App::begin() {
-
-    // register CLI commands
-    registerCommands();
-
-    // setup wifi
-    Preferences prefs;
-    prefs.begin("network", false);
-    String ssid = prefs.getString("ssid", "");
-    String pass = prefs.getString("pass", "");
-    String hostname = prefs.getString("hostname", WiFi.getHostname());
-    prefs.end();
-    Serial.flush();
-
-    Serial.println("Checking for WiFi configuration...");
-    if (ssid != "") {
-        setupWifi(ssid.c_str(), pass.c_str(), hostname.c_str());
-    } else {
-        Serial.println("WiFi not configured use 'wifi -ssid <your-ssid> -pass <your-pass>'");
-    }
-}
-
 String input;
-void Esp32App::handleSerialInput() {
+void _handleSerialInput() {
     // Check if user typed something into the serial monitor
     if (Serial.available()) {
         char c = Serial.read();
@@ -163,11 +143,10 @@ void Esp32App::handleSerialInput() {
             input += c;
         }
 
+        Serial.print(c);
         if (c == '\r') {
             simpleCli.parse(input);
             input = "";
-        } else {
-            Serial.print(c);
         }
     }
 
@@ -188,6 +167,43 @@ void Esp32App::handleSerialInput() {
         }
         Serial.print("\r\n# ");
     }
+}
+
+void inputHandlerLoop(void * pvParameters) {
+    while (true) {
+        _handleSerialInput();
+    }
+}
+
+void Esp32App::begin() {
+
+    // register CLI commands
+    registerCommands();
+
+    // setup wifi
+    Preferences prefs;
+    prefs.begin("network", false);
+    String ssid = prefs.getString("ssid", "");
+    String pass = prefs.getString("pass", "");
+    String hostname = prefs.getString("hostname", WiFi.getHostname());
+    prefs.end();
+    Serial.flush();
+
+    Serial.println("Checking for WiFi configuration...");
+    if (ssid != "") {
+        setupWifi(ssid.c_str(), pass.c_str(), hostname.c_str());
+    } else {
+        defaultNoWifiHandler();
+    }
+
+    xTaskCreatePinnedToCore(
+            inputHandlerLoop, /* Task function. */
+            "Serial Input",   /* name of task. */
+            10000,     /* Stack size of task */
+            nullptr,      /* parameter of the task */
+            1,         /* priority of the task */
+            &serialInputTask, /* Task handle to keep track of created task */
+            1);        /* pin task to core 0 */
 }
 
 

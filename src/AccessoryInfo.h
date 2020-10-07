@@ -15,7 +15,7 @@ struct AccessoryInfo {
 
     AccessoryInfo() = default;
 
-    void fromJson(JsonDocument &doc) {
+    void fromJson(JsonObject &doc) {
 
         if (doc["displayName"]) {
             String newName = doc["displayName"];
@@ -23,8 +23,7 @@ struct AccessoryInfo {
         }
     }
 
-    DynamicJsonDocument toJson() {
-        DynamicJsonDocument doc(512);
+    void toJson(JsonObject &doc) {
         doc["displayName"] = displayName;
         doc["firmwareBuildNumber"] = firmwareBuildNumber;
         doc["firmwareVersion"] = firmwareVersion;
@@ -33,10 +32,8 @@ struct AccessoryInfo {
         doc["serialNumber"] = serialNumber;
 
         // create an empty array
-        JsonArray features = doc.createNestedArray("features");
-        features.add(this->features[0]);
-
-        return doc;
+        JsonArray featuresNode = doc.createNestedArray("features");
+        featuresNode.add(this->features[0]);
     }
 };
 

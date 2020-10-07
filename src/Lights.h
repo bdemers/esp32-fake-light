@@ -23,7 +23,7 @@ struct Lights {
 
     Lights() = default;
 
-    void fromJson(JsonDocument &doc) {
+    void fromJson(JsonObject &doc) {
 
         if (doc["lights"]) {
 
@@ -57,8 +57,7 @@ struct Lights {
         }
     }
 
-    DynamicJsonDocument toJson() {
-        DynamicJsonDocument doc(512);
+    void toJson(JsonObject & doc) {
         doc["numberOfLights"] = numberOfLights;
 
         JsonArray features = doc.createNestedArray("lights");
@@ -69,7 +68,6 @@ struct Lights {
         light0["temperature"] = lights[0].temperature;
 
         features.add(light0);
-        return doc;
     }
 };
 #endif //ESP32_LIGHT_LIGHTS_H

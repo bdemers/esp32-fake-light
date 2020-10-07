@@ -15,19 +15,16 @@ struct Settings {
 
     Settings() = default;
 
-    DynamicJsonDocument toJson() {
-        DynamicJsonDocument doc(512);
+    void toJson(JsonObject & doc) {
         doc["colorChangeDurationMs"] = colorChangeDurationMs;
         doc["powerOnBehavior"] = powerOnBehavior;
         doc["powerOnBrightness"] = powerOnBrightness;
         doc["powerOnTemperature"] = powerOnTemperature;
         doc["switchOffDurationMs"] = switchOffDurationMs;
         doc["switchOnDurationMs"] = switchOnDurationMs;
-
-        return doc;
     }
 
-    void fromJson(JsonDocument &doc) {
+    void fromJson(JsonObject &doc) {
 
         colorChangeDurationMs = doc["colorChangeDurationMs"];
         powerOnBehavior = doc["powerOnBehavior"];
