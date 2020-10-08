@@ -294,9 +294,9 @@ void registerCliCommands() {
 
         ESP.restart();
     });
-    brightCommand.setDescription("Sets the mDNS service name and device id, and restarts device");
-    brightCommand.addArg("service_name", DEFAULT_SERVICE_NAME);
-    brightCommand.addArg("device_id", DEFAULT_DEVICE_ID);
+    mdnsCommand.setDescription("Sets the mDNS service name and device id, and restarts device");
+    mdnsCommand.addArg("service_name", DEFAULT_SERVICE_NAME);
+    mdnsCommand.addArg("device_id", DEFAULT_DEVICE_ID);
 }
 
 void setup() {

@@ -58,6 +58,15 @@ pio device monitor
 
 # then run
 wifi -ssid <your-ssid> -pass <your-pass>'
+
+# additinally you should probably set:
+hostname <your-hostname>
+
+# set a unique mdns service name
+mdns -service_name <your-service-name> -device_id <3C:6A:9D:13:C1:BD>
+
+# enable Over The Air password updates
+ota -pass <a-password>
 ```
 
 This will restart your ESP32 and connect to your Wifi.  Assuming all goes well, you should see "Fake Light" listed in 
@@ -65,13 +74,50 @@ the Elgato Control Center Application.
 
 ## Serial Commands 
 
-- `wifi -ssid <your-ssid> -pass <your-pass>`
-- `hostname [-hostname <your-hostname>] [-service_name <your-service-name>] [-device_id <your-device-id>]`
-- `light-on [0|1]`
-- `light-temperature <value>`
-- `light-brightness <value>`
-- `reboot`
-- `help`
+* **light-on \[-on <1>]**
+    
+    Enables or disables light
+
+* **light-temperature \[-temp <1>]**
+
+    Not Implemented
+
+* **light-brightness \[-brightness <1>]**
+    
+    Sets light brightness as a percentage 0-100
+
+* **mdns \[-service_name <Elgato Key Light Air 1337>] \[-device_id <3C:6A:9D:13:C1:BD>]**
+
+    Sets the mDNS service name and device id, and restarts device
+
+* **wifi -ssid <value> -pass <value>**
+
+    Sets WiFi SSID and Password
+
+* **reboot**
+
+    Reboots device
+
+* **echo -message <value>**
+
+    Prints message back to terminal
+
+* **hostname -hostname <value>**
+
+    Updates device hostname and restarts
+
+* **status**
+    
+    Prints basic device status
+
+* **ota \[-port <3232>] -pass <value>**
+
+    Sets the OTA firmware update port and password, then restarts
+
+* **help**
+
+    Prints this help message
+
 
 ## REST Endpoints
 

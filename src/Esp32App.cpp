@@ -246,7 +246,7 @@ bool startOTA() {
 
         ArduinoOTA.begin();
     } else {
-        Serial.println("OTA firmware updates are NOT enabled, run `ota --pass` to set a password");
+        Serial.println("OTA firmware updates are NOT enabled, run `ota -pass` to set a password");
     }
 
     return !pass.isEmpty();
