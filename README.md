@@ -59,7 +59,7 @@ pio device monitor
 # then run
 wifi -ssid <your-ssid> -pass <your-pass>'
 
-# additinally you should probably set:
+# additionally you should probably set:
 hostname <your-hostname>
 
 # set a unique mdns service name
