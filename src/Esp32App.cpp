@@ -269,11 +269,11 @@ void Esp32App::begin() {
     Serial.println("Checking for WiFi configuration...");
     if (ssid != "") {
         setupWifi(ssid.c_str(), pass.c_str(), hostname.c_str());
+
+        otaEnabled = startOTA();
     } else {
         defaultNoWifiHandler();
     }
-
-    otaEnabled = startOTA();
 
     xTaskCreatePinnedToCore(
             loopHandler, /* Task function. */
