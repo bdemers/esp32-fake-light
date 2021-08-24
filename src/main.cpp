@@ -240,16 +240,18 @@ void setupMDNS(const char* serviceName, const char* deviceId) {
         Serial.println("MDNS responder started");
     }
 
-    String deviceIdValue =  "id=";
-    deviceIdValue.concat(deviceId);
-
     MDNS.setInstanceName(serviceName);
     MDNS.addService("elg", "tcp", port);
     MDNS.addServiceTxt("elg", "tcp", "mf", "Elgato");
     MDNS.addServiceTxt("elg", "tcp", "dt", "200");
-    MDNS.addServiceTxt("elg", "tcp", "id", deviceIdValue);
+    MDNS.addServiceTxt("elg", "tcp", "id", deviceId);
     MDNS.addServiceTxt("elg", "tcp", "md", "Elgato Key Light Air 20LAB9901");
     MDNS.addServiceTxt("elg", "tcp", "pv", "1.0");
+
+    Serial.print("\tService Name: ");
+    Serial.println(serviceName);
+    Serial.print("\tDevice ID: ");
+    Serial.println(deviceId);
 }
 
 void registerCliCommands() {
