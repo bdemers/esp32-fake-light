@@ -203,6 +203,10 @@ void identify(AsyncWebServerRequest * request) {
     request->send(200);
 }
 
+void notFound(AsyncWebServerRequest * request) {
+    request->send(404);
+}
+
 // Define routing
 void restServerRouting() {
     server.on("/", HTTP_GET, [](AsyncWebServerRequest * request) {
@@ -232,6 +236,9 @@ void restServerRouting() {
 
     // POST - /elgato/identify
     server.on("/elgato/identify", HTTP_POST, identify);
+
+    // GET = /elgato/battery-info - force empty 404
+    server.on("/elgato/battery-info", HTTP_GET, notFound);
 }
 
 void setupMDNS(const char* serviceName, const char* deviceId) {
