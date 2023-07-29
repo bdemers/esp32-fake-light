@@ -51,6 +51,21 @@ Then build it with PlatformIO
 pio run
 ```
 
+
+Upload the firmware via USB:
+
+```shell
+pio run --target upload --upload-port /dev/cu.usbserial-0001
+```
+
+Or upload over the air:
+
+> **NOTE:** Uncomment the `upload_flags` section in `platformio.ini` and then run:
+
+```sh
+OTA_PASS=<your-pass> pio run -t upload --upload-port <device-ip-address>
+```
+
 After uploading the firmware you MUST set your WiFi SSID and passphrase, run:
 
 ```sh
