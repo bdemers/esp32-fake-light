@@ -213,13 +213,6 @@ void restServerRouting() {
         request->send(200, "text/html", "Welcome to the REST Web Server");
     });
 
-    // GET - /elgato/lights
-    server.on("/elgato/lights", HTTP_GET, getLights);
-    // PUT - /elgato/lights
-    auto* lightsHandler = new JsonCallbackHandler("/elgato/lights", putLights);
-    lightsHandler->setMethod(HTTP_PUT);
-    server.addHandler(lightsHandler);
-
     // GET - /elgato/accessory-info
     server.on("/elgato/accessory-info", HTTP_GET, getAccessoryInfo);
     // PUT - /elgato/accessory-info
@@ -233,6 +226,13 @@ void restServerRouting() {
     auto* settingsHandler = new JsonCallbackHandler("/elgato/lights/settings", putSettings);
     settingsHandler->setMethod(HTTP_PUT);
     server.addHandler(settingsHandler);
+
+    // GET - /elgato/lights
+    server.on("/elgato/lights", HTTP_GET, getLights);
+    // PUT - /elgato/lights
+    auto* lightsHandler = new JsonCallbackHandler("/elgato/lights", putLights);
+    lightsHandler->setMethod(HTTP_PUT);
+    server.addHandler(lightsHandler);
 
     // POST - /elgato/identify
     server.on("/elgato/identify", HTTP_POST, identify);
